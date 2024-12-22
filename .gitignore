@@ -1,0 +1,8 @@
+# Ignore config.js
+resumeuploadpage/config.js
+
+# Ignore interface.html
+interface.html
+
+#Ignore access keys
+file-uploader-wth_accessKeys.csv

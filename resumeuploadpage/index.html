@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./vars.css">
+  <link rel="stylesheet" href="./style.css">
+  <title>Upload Resume</title>
+  <style>
+    /* Existing styles */
+    a, button, input, select, h1, h2, h3, h4, h5, * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      border: none;
+      text-decoration: none;
+      background: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    menu, ol, ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Drag-and-Drop Box Styles */
+    #drop-zone {
+      margin: 200px auto 50px auto;
+      width: 100%;
+      max-width: 600px;
+      height: 400px;
+      border: 2px dashed #007bff;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #007bff;
+      background-color: white;
+    }
+
+    #drop-zone.dragover {
+      border-color: green;
+      color: green;
+    }
+
+    .upload-result {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header from index.html -->
+  <div class="desktop-1">
+    <div class="header">
+      <div class="block">
+        <!-- Logo -->
+        <img src="no-bg-nexswap-11.png" alt="Logo" class="logo">
+      </div>
+      <div class="block"></div>
+      <div class="navigation-pill-list">
+        <div class="navigation-pill">
+          <a href="../homepage/index.html" class="title">Home</a>
+        </div> 
+      </div>
+      <div class="header-auth">
+        <div class="button">
+          <div class="button2">Log Out</div>
+        </div>
+        <!-- <div class="button3">
+          <div class="button4">Register</div>
+        </div> -->
+      </div>
+    </div>
+
+    <!-- Drag-and-Drop Box from interface.html -->
+    <div id="drop-zone">Drag and drop files here</div>
+    <div class="upload-result" id="upload-result"></div>
+  </div>
+
+  <!-- Script from interface.html -->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1419.0.min.js"></script>
+  <script type="module">
+    import { awsConfig } from './config.js';
+    // AWS S3 Configuration
+    AWS.config.update({
+      accessKeyId: awsConfig.accessKeyId, // Replace with your AWS access key
+      secretAccessKey: awsConfig.secretAccessKey, // Replace with your AWS secret key
+      region: awsConfig.region // Replace with your S3 bucket region
+    });
+
+    const s3 = new AWS.S3();
+    const bucketName = awsConfig.bucketName; // Replace with your S3 bucket name
+
+    const dropZone = document.getElementById('drop-zone');
+    const uploadResult = document.getElementById('upload-result');
+
+    // Handle Drag Over
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    // Handle Drag Leave
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    // Handle File Drop
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        uploadResult.innerHTML = 'Uploading file...';
+        try {
+          for (let file of files) {
+            const uploadResult = await uploadToS3(file);
+            displayResult(file.name, uploadResult.Location);
+          }
+        } catch (err) {
+          console.error('Error uploading file:', err);
+          uploadResult.innerHTML = 'Error uploading file. Check the console for details.';
+        }
+      }
+    });
+
+    // Upload File to S3
+    async function uploadToS3(file) {
+      const params = {
+        Bucket: bucketName,
+        Key: file.name,
+        Body: file,
+        ContentType: file.type,
+      };
+      return s3.upload(params).promise();
+    }
+
+    // Display Upload Result
+    function displayResult(fileName, fileUrl) {
+      const resultHtml = `
+        <p><strong>${fileName}</strong> uploaded successfully!</p>
+        <p><a href="${fileUrl}" target="_blank">View File</a></p>
+      `;
+      uploadResult.innerHTML += resultHtml;
+    }
+  </script>
+</body>
+</html>
